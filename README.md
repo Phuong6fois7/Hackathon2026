@@ -3,12 +3,12 @@ End-to-end project combining Data Engineering and Generative AI, using a biomedi
 
 # Mission
 Build a measured data-and-AI system for biomedical long documents:
-- Ingest PubMed-style articles,
-- Store them cleanly,
-- Add new articles,
-- Summarize them with AI,
+- Ingest PubMed-style articles and structuring,
+- Store them in Parquet format,
+- Add new articles to the database,
+- Summarize them with AI-generated,
 - Search the corpus with RAG,
-- Benchmark environmental, cost, latency, and quality trade-offs.
+- Evaluate performance in terms of cost, latency, quality, and environmental impact.
 
 # 1. Domain and Dataset Context
 ## 1.1 What is PubMed?
