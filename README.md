@@ -18,3 +18,11 @@ We use the **ccdv/pubmed-summarization** dataset from **Hugging Face**:
 [PubMed Summarization Dataset](https://huggingface.co/datasets/ccdv/pubmed-summarization)
 
 This dataset is inspired by biomedical articles similar to those indexed in PubMed and is used for educational and experimentation purposes. It is provided in **Parquet format**, enabling efficient storage and processing within our data and AI pipeline.
+
+# 3. Setup 
+## Recommended local setup
+python -m venv .venv
+source .venv/bin/activate    # Windows: .venv\Scripts\activate
+pip install datasets pandas pyarrow polars codecarbon tiktoken
+pip install sentence-transformers faiss-cpu scikit-learn streamlit matplotlib
+pip freeze > requirements.txt
