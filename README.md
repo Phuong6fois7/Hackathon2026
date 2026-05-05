@@ -21,6 +21,8 @@ This dataset is inspired by biomedical articles similar to those indexed in PubM
 
 # 3. Setup 
 ## 3.1. Recommended local setup
+
+```bash
 python -m venv .venv
 
 source .venv/bin/activate    # Windows: .venv\Scripts\activate
