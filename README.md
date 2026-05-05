@@ -1,6 +1,10 @@
 # Hackathon2026
 **End-to-end project combining Data Engineering and Generative AI, using a biomedical article corpus inspired by PubMed.**
 
+<p align="center">
+  <img src="assets/logo_pub_med.png" alt="logo_pub_med" />
+</p>
+
 # Mission
 Build a measured data-and-AI system for biomedical long documents:
 - Ingest PubMed-style articles and structuring,
