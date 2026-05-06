@@ -43,15 +43,15 @@ def create_bronze_articles() -> pd.DataFrame:
 
     df = df[df["article"].str.strip() != ""].copy()
 
-    # # Simple readable ID
-    # df = df.reset_index(drop=True)
-    # df["id"] = df.index.map(lambda x: f"article_{x}")
-
-    # # Other way: id is also index
-    # # Reset index propre
+    # Simple readable ID
     df = df.reset_index(drop=True)
-    # ID numérique simple
-    df["id"] = df.index
+    df["id"] = df.index.map(lambda x: f"article_{x}")
+
+    # # # Other way: id is also index
+    # # # Reset index propre
+    # df = df.reset_index(drop=True)
+    # # ID numérique simple
+    # df["id"] = df.index
 
 
     # Metadata
