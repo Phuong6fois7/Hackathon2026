@@ -191,6 +191,29 @@ def retrieve(query: str, k: int = 5) -> pd.DataFrame:
 
     return retrieved
 
+def build_rag_prompt(question: str, retrieved_chunks: pd.DataFrame) -> str:
+    """
+    Build a compact RAG prompt using retrieved chunks.
+    """
+
+    context = "\n\n".join(retrieved_chunks["chunk_text"].tolist())
+
+    prompt = f"""
+You are a biomedical research assistant.
+Answer only from the provided context.
+If the answer is not present in the context, say so.
+
+Context:
+{context}
+
+Question:
+{question}
+
+Answer:
+""".strip()
+
+    return prompt
+
 def main():
     if not SILVER_PATH.exists():
         raise FileNotFoundError(
@@ -260,6 +283,15 @@ def main():
 
     print("\nTop retrieved chunk text:")
     print(retrieved_chunks.iloc[0]["chunk_text"])
+
+    print("\nBuilding RAG prompt...")
+
+    question = "What are the main cardiovascular outcomes mentioned in the retrieved context?"
+
+    rag_prompt = build_rag_prompt(question, retrieved_chunks)
+
+    print("\nRAG prompt preview:")
+    print(rag_prompt[:1500])
 
 if __name__ == "__main__":
     main()
