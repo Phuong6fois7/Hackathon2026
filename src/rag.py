@@ -136,6 +136,7 @@ def build_embeddings(chunks_df: pd.DataFrame) -> None:
         normalize_embeddings=True,
         show_progress_bar=True
     )
+    embeddings = np.array(embeddings, dtype="float32")
 
     GOLD_EMBEDDINGS_PATH.parent.mkdir(parents=True, exist_ok=True)
 
@@ -158,6 +159,37 @@ def build_embeddings(chunks_df: pd.DataFrame) -> None:
     print(f"Embeddings shape: {embeddings.shape}")
     print(f"FAISS vectors: {index.ntotal}")
 
+def retrieve(query: str, k: int = 5) -> pd.DataFrame:
+    """
+    Retrieve the most relevant chunks for a user query using FAISS similarity search.
+    """
+
+    if not GOLD_CHUNKS_PATH.exists():
+        raise FileNotFoundError("Gold chunks file not found.")
+
+    if not FAISS_INDEX_PATH.exists():
+        raise FileNotFoundError("FAISS index file not found.")
+
+    chunks_df = pd.read_parquet(GOLD_CHUNKS_PATH)
+
+    index = faiss.read_index(str(FAISS_INDEX_PATH))
+
+    model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
+
+    query_embedding = model.encode(
+        [query],
+        normalize_embeddings=True
+    )
+
+    query_embedding = np.array(query_embedding, dtype="float32")
+
+    scores, indices = index.search(query_embedding, k)
+
+    retrieved = chunks_df.iloc[indices[0]].copy()
+
+    retrieved["score"] = scores[0]
+
+    return retrieved
 
 def main():
     if not SILVER_PATH.exists():
@@ -207,6 +239,27 @@ def main():
 
     build_embeddings(gold_chunks)
 
+
+    print("\nTesting retrieval...")
+
+    query = "What are the effects of hypertension on cardiovascular disease?"
+
+    retrieved_chunks = retrieve(query, k=3)
+
+    print("\nRetrieved chunks:")
+    print(
+        retrieved_chunks[
+            [
+                "chunk_id",
+                "id",
+                "chunk_index",
+                "score",
+            ]
+        ]
+    )
+
+    print("\nTop retrieved chunk text:")
+    print(retrieved_chunks.iloc[0]["chunk_text"])
 
 if __name__ == "__main__":
     main()
