@@ -1,5 +1,5 @@
 {
   "id": "new_article_001",
-  "article": "This is a simulated biomedical article. It studies the effect of a treatment on patient outcomes. The article contains methods, results, and discussion sections.",
-  "abstract": ""
+  "article": "This simulated biomedical article investigates the effect of a new treatment on patient outcomes. The study compares treated and control groups, evaluates clinical response, and discusses potential benefits and limitations. Results suggest that the treatment may improve short-term outcomes, but further validation is required on a larger cohort.",
+  "abstract": "This simulated study evaluates a new biomedical treatment and its effect on patient outcomes. The results suggest potential short-term benefits, while emphasizing the need for further validation on a larger cohort."
 }
