@@ -45,11 +45,18 @@ from pathlib import Path
 import pandas as pd
 from typing import List
 
+import numpy as np
+import faiss
+from sentence_transformers import SentenceTransformer
+
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 SILVER_PATH = PROJECT_ROOT / "data" / "silver" / "silver_articles.parquet"
 GOLD_CHUNKS_PATH = PROJECT_ROOT / "data" / "gold" / "gold_chunks.parquet"
+GOLD_EMBEDDINGS_PATH = PROJECT_ROOT / "data" / "gold" / "gold_embeddings.npy"
+GOLD_EMBEDDING_METADATA_PATH = PROJECT_ROOT / "data" / "gold" / "gold_embedding_metadata.parquet"
+FAISS_INDEX_PATH = PROJECT_ROOT / "data" / "gold" / "faiss_index.bin"
 
 MAX_WORDS_PER_CHUNK = 220
 MIN_CHARS_PER_CHUNK = 100
@@ -110,6 +117,48 @@ def build_gold_chunks(df_silver: pd.DataFrame) -> pd.DataFrame:
     return gold_chunks
 
 
+def build_embeddings(chunks_df: pd.DataFrame) -> None:
+    """
+    Build embeddings from Gold chunks.
+
+    Each chunk_text is converted into a numerical vector.
+    These vectors will later be used to find the chunks most similar
+    to a user question.
+    """
+
+    if "chunk_text" not in chunks_df.columns:
+        raise ValueError("Missing column: chunk_text")
+
+    model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
+
+    embeddings = model.encode(
+        chunks_df["chunk_text"].tolist(),
+        normalize_embeddings=True,
+        show_progress_bar=True
+    )
+
+    GOLD_EMBEDDINGS_PATH.parent.mkdir(parents=True, exist_ok=True)
+
+    np.save(GOLD_EMBEDDINGS_PATH, embeddings)
+
+    index = faiss.IndexFlatIP(embeddings.shape[1])
+    index.add(embeddings)
+    faiss.write_index(index, str(FAISS_INDEX_PATH))
+
+    metadata = chunks_df[["chunk_id", "id", "chunk_index", "approx_tokens"]].copy()
+    metadata.to_parquet(
+        GOLD_EMBEDDING_METADATA_PATH,
+        index=False,
+        compression="snappy"
+    )
+
+    print(f"Embeddings saved to: {GOLD_EMBEDDINGS_PATH}")
+    print(f"Embedding metadata saved to: {GOLD_EMBEDDING_METADATA_PATH}")
+    print(f"FAISS index saved to: {FAISS_INDEX_PATH}")
+    print(f"Embeddings shape: {embeddings.shape}")
+    print(f"FAISS vectors: {index.ntotal}")
+
+
 def main():
     if not SILVER_PATH.exists():
         raise FileNotFoundError(
@@ -117,6 +166,17 @@ def main():
         )
 
     df_silver = pd.read_parquet(SILVER_PATH)
+
+    print("\nSilver DataFrame tail:")
+    print(df_silver.tail())
+
+    # Check that the new article exists in Silver
+    new_article_silver = df_silver[df_silver["id"].astype(str) == "new_article_001"]
+
+    print("\nNew article in Silver:")
+    print(new_article_silver)
+
+    print("\nBuilding Gold chunks...")
 
     gold_chunks = build_gold_chunks(df_silver)
 
@@ -130,7 +190,22 @@ def main():
 
     print(f"Gold chunks saved to: {GOLD_CHUNKS_PATH}")
     print(f"Rows: {len(gold_chunks)}")
+
+    print("\nGold chunks head:")
     print(gold_chunks.head())
+
+    print("\nGold chunks tail:")
+    print(gold_chunks.tail())
+
+    # Check chunks created from the new article
+    new_article_chunks = gold_chunks[
+        gold_chunks["id"].astype(str) == "new_article_001"
+        ]
+
+    print("\nChunks generated for new_article_001:")
+    print(new_article_chunks)
+
+    build_embeddings(gold_chunks)
 
 
 if __name__ == "__main__":
