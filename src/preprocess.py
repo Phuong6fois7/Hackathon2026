@@ -102,6 +102,7 @@ def main():
 
     print(f"Saved Silver dataset to {SILVER_PATH}")
     print(f"Rows: {len(df_silver)}")
+    print(df_silver.head())
 
 
 if __name__ == "__main__":
