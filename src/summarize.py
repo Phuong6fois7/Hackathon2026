@@ -28,6 +28,37 @@ def simple_summary(text: str, max_words: int = 120) -> str:
     words = text.split()
     return " ".join(words[:max_words])
 
+def build_p1_long_prompt(article_text: str) -> str:
+    """
+    P1: Long prompt using the full article.
+    Higher input token cost.
+    """
+    return f"""
+Summarize the following biomedical article in an abstract-style format.
+
+Article:
+{article_text}
+
+Summary:
+""".strip()
+
+
+def build_p2_compact_prompt(article_text: str, max_words: int = 500) -> str:
+    """
+    P2: Compact prompt using only the beginning of the article.
+    Lower input token cost.
+    """
+    short_article = " ".join(article_text.split()[:max_words])
+
+    return f"""
+Write a concise biomedical abstract-style summary.
+
+Text:
+{short_article}
+
+Summary:
+""".strip()
+
 def simple_quality_score(generated_summary: str, reference_abstract: str):
     """
     Basic comparison between generated summary and reference abstract.
@@ -53,32 +84,38 @@ def build_summaries(df_silver: pd.DataFrame) -> pd.DataFrame:
         article_text = row["article_clean"]
         reference_abstract = row["abstract_clean"]
 
-        start = time.time()
-        summary = simple_summary(article_text)
-        latency = time.time() - start
-
         has_reference = isinstance(reference_abstract, str) and reference_abstract.strip() != ""
 
-        quality_score = simple_quality_score(summary, reference_abstract)
+        prompt_versions = [
+            ("P1_long_prompt", build_p1_long_prompt(article_text)),
+            ("P2_compact_prompt", build_p2_compact_prompt(article_text)),
+        ]
 
-        if has_reference:
-            notes = "Reference abstract available; generated summary compared with reference abstract."
-        else:
-            notes = "No reference abstract available; generated summary only."
+        for prompt_version, prompt in prompt_versions:
+            start = time.time()
+            summary = simple_summary(article_text)
+            latency = time.time() - start
 
-        records.append({
-            "id": article_id,
-            "model": "baseline_truncate",
-            "prompt_version": "P0_simple",
-            "generated_summary": summary,
-            "reference_abstract": reference_abstract,
-            "has_reference_abstract": has_reference,
-            "latency_s": latency,
-            "input_tokens": approx_tokens(article_text),
-            "output_tokens": approx_tokens(summary),
-            "quality_score": quality_score,
-            "notes": notes,
-        })
+            quality_score = simple_quality_score(summary, reference_abstract)
+
+            if has_reference:
+                notes = "Reference abstract available; baseline summary compared with reference. No API used."
+            else:
+                notes = "No reference abstract available; baseline summary generated only. No API used."
+
+            records.append({
+                "id": article_id,
+                "model": "baseline_truncate",
+                "prompt_version": prompt_version,
+                "generated_summary": summary,
+                "reference_abstract": reference_abstract,
+                "has_reference_abstract": has_reference,
+                "latency_s": latency,
+                "input_tokens": approx_tokens(prompt),
+                "output_tokens": approx_tokens(summary),
+                "quality_score": quality_score,
+                "notes": notes,
+            })
 
     return pd.DataFrame(records)
 
@@ -116,15 +153,22 @@ def main():
             new_article_summary[
                 [
                     "id",
+                    "prompt_version",
                     "has_reference_abstract",
-                    "generated_summary",
-                    "reference_abstract",
+                    "input_tokens",
+                    "output_tokens",
                     "quality_score",
                     "notes",
                 ]
             ]
         )
 
+    print("\nPrompt version token comparison:")
+    print(
+        df_summary.groupby("prompt_version")[
+            ["input_tokens", "output_tokens", "latency_s", "quality_score"]
+        ].mean()
+    )
 
 if __name__ == "__main__":
     main()
