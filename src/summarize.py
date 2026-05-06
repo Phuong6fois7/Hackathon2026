@@ -65,10 +65,37 @@ def main():
 
     GOLD_SUMMARY_PATH.parent.mkdir(parents=True, exist_ok=True)
 
-    df_summary.to_parquet(GOLD_SUMMARY_PATH, index=False)
+    df_summary.to_parquet(GOLD_SUMMARY_PATH, index=False, compression="snappy")
 
     print(f"Saved summaries to {GOLD_SUMMARY_PATH}")
+    print(f"Rows: {len(df_summary)}")
+
+    print("\nGold summaries head:")
     print(df_summary.head())
+
+    print("\nGold summaries tail:")
+    print(df_summary.tail())
+
+    print("\nComparison for new_article_001:")
+    new_article_summary = df_summary[
+        df_summary["id"].astype(str) == "new_article_001"
+        ]
+
+    if new_article_summary.empty:
+        print("new_article_001 not found in Gold summaries.")
+    else:
+        print(
+            new_article_summary[
+                [
+                    "id",
+                    "has_reference_abstract",
+                    "generated_summary",
+                    "reference_abstract",
+                    "quality_score",
+                    "notes",
+                ]
+            ]
+        )
 
 
 if __name__ == "__main__":
